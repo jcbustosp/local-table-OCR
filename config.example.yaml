@@ -1,0 +1,7 @@
+ocr:
+  language: "en"
+  export_format: "excel"
+
+paths:
+  input_dir: "./inputs/test.png"
+  output_dir: "./dist"

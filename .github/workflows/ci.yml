@@ -1,0 +1,32 @@
+name: CI Quality Checks
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  quality-checks:
+    name: Run Ruff Linter and Formatter
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Check out the repository source code
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 2. Install 'uv' and automatically setup the correct Python environment
+      - name: Install uv and Setup Python
+        uses: astral-sh/setup-uv@v5
+        with:
+          # Automatically uses the Python version specified in pyproject.toml
+          enable-cache: true
+
+      # 3. Check code formatting standard
+      - name: Verify Code Formatting (Ruff Format)
+        run: uv run ruff format --check src/
+
+      # 4. Check for static analysis, imports, and syntax issues
+      - name: Run Code Linting (Ruff Check)
+        run: uv run ruff check src/
