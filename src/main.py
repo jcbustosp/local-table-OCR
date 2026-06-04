@@ -61,7 +61,7 @@ def run_pipeline(config_file_path: str, input_target_path: str) -> None:
         sys.exit(1)
 
 
-if __name__ == "__main__":
+def main():
     if len(sys.argv) < 3:
         sys.stderr.write(
             "\n❌ Error: Missing required arguments.\n"
@@ -73,4 +73,8 @@ if __name__ == "__main__":
     CONFIG_INPUT = sys.argv[1]
     TARGET_INPUT = sys.argv[2]
 
-    run_pipeline(config_file_path=CONFIG_INPUT, input_target_path=TARGET_INPUT)
+    run_pipeline(CONFIG_INPUT, TARGET_INPUT)
+
+
+if __name__ == "__main__":  # pragma: nocover
+    main()

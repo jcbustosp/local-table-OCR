@@ -16,7 +16,12 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "bandit>=1.9.4",
+    "coverage>=7.14.1",
     "deptry>=0.25.1",
+    "pyright>=1.1.410",
+    "pytest>=9.0.3",
+    "pytest-cov>=7.1.0",
     "ruff>=0.15.15",
 ]
 
@@ -33,7 +38,19 @@ line-length = 100
 # I   = isort (automatically sorts your imports alphabetically)
 # UP  = pyupgrade (modernizes python syntax like type hints automatically)
 # B   = flake8-bugbear (common programming traps and code design smells)
-select = ["E", "W", "F", "I", "UP", "B"]
+select = [
+    "E",
+    "W",
+    "F",
+    "I",
+    "UP",
+    "B",
+
+    # Additional high-value checks
+    "SIM",   # simplify
+    "C4",    # comprehensions
+    "RUF",   # Ruff-specific
+]
 
 # Explicitly tell Ruff which rules it is allowed to rewrite on disk automatically
 fixable = ["ALL"]
@@ -44,3 +61,29 @@ ignore = ["E203"]
 [tool.ruff.lint.isort]
 # Combines your internal local project files neatly separate from external third-party imports
 known-first-party = ["src"]
+
+[tool.pyright]
+typeCheckingMode = "basic"
+reportAttributeAccessIssue = false
+
+[tool.bandit]
+exclude_dirs = ["tests"]
+severity = "medium"
+
+[tool.pytest.ini_options]
+python_files = ["test_*.py", "*_test.py"]
+addopts = """
+--cov=src
+--cov-report=term-missing
+--cov-report=html:.dist/coverage
+--cov-report=xml:.dist/coverage.xml
+--cov-fail-under=100
+"""
+
+[tool.coverage.run]
+branch = true
+source = ["src"]
+data_file = ".dist/.coverage"
+
+[tool.coverage.report]
+show_missing = true
