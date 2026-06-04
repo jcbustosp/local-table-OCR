@@ -1,5 +1,6 @@
 import logging
 from pathlib import Path
+from typing import ClassVar
 
 import cv2
 from paddleocr import PPStructureV3
@@ -11,7 +12,13 @@ logger = logging.getLogger(__name__)
 
 class OCREngine:
     # Supported image formats for PaddleOCR processing
-    VALID_EXTENSIONS = {".png", ".jpg", ".jpeg"}
+    VALID_EXTENSIONS: ClassVar[frozenset[str]] = frozenset(
+        {
+            ".png",
+            ".jpg",
+            ".jpeg",
+        }
+    )
 
     def __init__(self, settings: OcrSettings):
         """Cleanly injects only the configuration slices this module requires."""

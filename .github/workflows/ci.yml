@@ -1,32 +1,113 @@
-name: CI Quality Checks
+name: CI
 
 on:
   push:
-    branches: [ "main", "master" ]
   pull_request:
-    branches: [ "main", "master" ]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 
 jobs:
-  quality-checks:
-    name: Run Ruff Linter and Formatter
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Check out the repository source code
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      # 2. Install 'uv' and automatically setup the correct Python environment
-      - name: Install uv and Setup Python
-        uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v5
         with:
-          # Automatically uses the Python version specified in pyproject.toml
           enable-cache: true
 
-      # 3. Check code formatting standard
-      - name: Verify Code Formatting (Ruff Format)
+      - run: uv sync --frozen
+
+      - name: Ruff format check
         run: uv run ruff format --check src/
 
-      # 4. Check for static analysis, imports, and syntax issues
-      - name: Run Code Linting (Ruff Check)
+      - name: Ruff lint
         run: uv run ruff check src/
+
+
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - run: uv sync --frozen
+
+      - name: Pyright
+        run: uv run pyright
+
+
+  security:
+    name: Security
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - run: uv sync --frozen
+
+      - name: Bandit scan
+        run: uv run bandit -r src/ -ll
+
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install Python
+        run: uv python install ${{ matrix.python-version }}
+
+      - name: Sync dependencies
+        run: uv sync --frozen
+
+      - name: Run tests with coverage
+        run: |
+          uv run pytest \
+            --cov=src \
+            --cov-report=term-missing \
+            --cov-report=xml:coverage.xml \
+            --cov-fail-under=90 \
+            --junitxml=pytest-results.xml
+
+      - name: Upload pytest results
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-results-py${{ matrix.python-version }}
+          path: pytest-results.xml
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-py${{ matrix.python-version }}
+          path: coverage.xml
