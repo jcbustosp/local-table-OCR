@@ -32,7 +32,7 @@ def test_run_pipeline_single_file(tmp_path, monkeypatch):
     # --- mock config ---
     fake_config = SimpleNamespace(
         ocr=SimpleNamespace(export_format="csv"),
-        paths=SimpleNamespace(output_dir=tmp_path / "out"),
+        paths=SimpleNamespace(input_dir=input_file, output_dir=tmp_path / "out"),
     )
 
     monkeypatch.setattr("src.main.load_config_file", lambda _: fake_config)
@@ -46,7 +46,7 @@ def test_run_pipeline_single_file(tmp_path, monkeypatch):
     monkeypatch.setattr("src.main.DataExporter", lambda **_: fake_exporter)
 
     # run
-    run_pipeline(str(config_file), str(input_file))
+    run_pipeline(str(config_file))
 
     assert fake_ocr.process_image.called
     assert fake_exporter.save_results.called
@@ -61,7 +61,7 @@ def test_run_pipeline_invalid_file_extension(tmp_path, monkeypatch):
 
     fake_config = SimpleNamespace(
         ocr=SimpleNamespace(export_format="csv"),
-        paths=SimpleNamespace(output_dir=tmp_path / "out"),
+        paths=SimpleNamespace(input_dir=input_file, output_dir=tmp_path / "out"),
     )
 
     monkeypatch.setattr("src.main.load_config_file", lambda _: fake_config)
@@ -70,7 +70,7 @@ def test_run_pipeline_invalid_file_extension(tmp_path, monkeypatch):
 
     # sys.exit is triggered → catch it
     with pytest.raises(SystemExit):
-        run_pipeline(str(config_file), str(input_file))
+        run_pipeline(str(config_file))
 
 
 def test_run_pipeline_directory_with_images(tmp_path, monkeypatch):
@@ -88,7 +88,7 @@ def test_run_pipeline_directory_with_images(tmp_path, monkeypatch):
 
     fake_config = SimpleNamespace(
         ocr=SimpleNamespace(export_format="csv"),
-        paths=SimpleNamespace(output_dir=tmp_path / "out"),
+        paths=SimpleNamespace(input_dir=dir_path, output_dir=tmp_path / "out"),
     )
 
     monkeypatch.setattr("src.main.load_config_file", lambda _: fake_config)
@@ -99,7 +99,7 @@ def test_run_pipeline_directory_with_images(tmp_path, monkeypatch):
     fake_exporter = FakeExporter()
     monkeypatch.setattr("src.main.DataExporter", lambda **_: fake_exporter)
 
-    run_pipeline(str(config_file), str(dir_path))
+    run_pipeline(str(config_file))
 
     assert fake_ocr.process_image.call_count == 2
     assert fake_exporter.save_results.call_count == 2
@@ -114,7 +114,7 @@ def test_run_pipeline_directory_empty(tmp_path, monkeypatch):
 
     fake_config = SimpleNamespace(
         ocr=SimpleNamespace(export_format="csv"),
-        paths=SimpleNamespace(output_dir=tmp_path / "out"),
+        paths=SimpleNamespace(input_dir=dir_path, output_dir=tmp_path / "out"),
     )
 
     monkeypatch.setattr("src.main.load_config_file", lambda _: fake_config)
@@ -122,26 +122,7 @@ def test_run_pipeline_directory_empty(tmp_path, monkeypatch):
     monkeypatch.setattr("src.main.DataExporter", lambda **_: FakeExporter())
 
     # should NOT crash, just return
-    run_pipeline(str(config_file), str(dir_path))
-
-
-def test_run_pipeline_missing_path(tmp_path, monkeypatch):
-    config_file = tmp_path / "config.yaml"
-    config_file.write_text("dummy")
-
-    missing = tmp_path / "does_not_exist.png"
-
-    fake_config = SimpleNamespace(
-        ocr=SimpleNamespace(export_format="csv"),
-        paths=SimpleNamespace(output_dir=tmp_path / "out"),
-    )
-
-    monkeypatch.setattr("src.main.load_config_file", lambda _: fake_config)
-    monkeypatch.setattr("src.main.OCREngine", lambda settings: FakeOCR(valid=False))
-    monkeypatch.setattr("src.main.DataExporter", lambda **_: FakeExporter())
-
-    with pytest.raises(SystemExit):
-        run_pipeline(str(config_file), str(missing))
+    run_pipeline(str(config_file))
 
 
 def test_main_missing_args(monkeypatch, capsys):
@@ -157,7 +138,6 @@ def test_main_missing_args(monkeypatch, capsys):
 
 
 def test_run_pipeline_directory_skips_invalid_files(tmp_path, monkeypatch):
-    from src.main import run_pipeline
 
     config_file = tmp_path / "config.yaml"
     config_file.write_text("dummy")
@@ -173,7 +153,7 @@ def test_run_pipeline_directory_skips_invalid_files(tmp_path, monkeypatch):
 
     fake_config = SimpleNamespace(
         ocr=SimpleNamespace(export_format="csv"),
-        paths=SimpleNamespace(output_dir=tmp_path / "out"),
+        paths=SimpleNamespace(input_dir=dir_path, output_dir=tmp_path / "out"),
     )
 
     monkeypatch.setattr("src.main.load_config_file", lambda _: fake_config)
@@ -190,14 +170,13 @@ def test_run_pipeline_directory_skips_invalid_files(tmp_path, monkeypatch):
     fake_exporter = MagicMock()
     monkeypatch.setattr("src.main.DataExporter", lambda **_: fake_exporter)
 
-    run_pipeline(str(config_file), str(dir_path))
+    run_pipeline(str(config_file))
 
     # only valid file processed
     assert fake_exporter.save_results.call_count == 1
 
 
 def test_pipeline_handles_single_file_error(monkeypatch, tmp_path):
-    from src.main import run_pipeline
 
     config_file = tmp_path / "config.yaml"
     config_file.write_text("dummy")
@@ -227,7 +206,7 @@ def test_pipeline_handles_single_file_error(monkeypatch, tmp_path):
     monkeypatch.setattr("src.main.DataExporter", lambda **_: fake_exporter)
 
     # should NOT raise
-    run_pipeline(str(config_file), str(input_file))
+    run_pipeline(str(config_file))
 
     # exporter never called due to failure
     assert not fake_exporter.save_results.called
@@ -236,22 +215,19 @@ def test_pipeline_handles_single_file_error(monkeypatch, tmp_path):
 def test_main_runs_pipeline(monkeypatch):
     called = {}
 
-    def fake_run_pipeline(config_file_path, input_target_path):
+    def fake_run_pipeline(config_file_path):
         called["config"] = config_file_path
-        called["input"] = input_target_path
 
     monkeypatch.setattr("src.main.run_pipeline", fake_run_pipeline)
 
-    monkeypatch.setattr(sys, "argv", ["main.py", "config.yaml", "input.png"])
+    monkeypatch.setattr(sys, "argv", ["main.py", "config.yaml"])
 
     main()
 
     assert called["config"] == "config.yaml"
-    assert called["input"] == "input.png"
 
 
 def test_pipeline_global_crash(monkeypatch, tmp_path):
-    from src.main import run_pipeline
 
     config_file = tmp_path / "config.yaml"
     config_file.write_text("dummy")
@@ -266,6 +242,6 @@ def test_pipeline_global_crash(monkeypatch, tmp_path):
     monkeypatch.setattr("src.main.load_config_file", crash)
 
     with pytest.raises(SystemExit) as e:
-        run_pipeline(str(config_file), str(input_file))
+        run_pipeline(str(config_file))
 
     assert e.value.code == 1

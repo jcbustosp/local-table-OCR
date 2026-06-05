@@ -1,11 +1,11 @@
 import logging
 
+import pytest
 import yaml
+from pydantic import ValidationError
 
 from src.config import (
-    AppConfig,
     OcrSettings,
-    PathSettings,
     load_config_file,
     setup_logger,
 )
@@ -23,12 +23,6 @@ def test_ocr_settings_custom():
     assert cfg.export_format == "excel"
 
 
-def test_app_config_defaults():
-    cfg = AppConfig()
-    assert isinstance(cfg.ocr, OcrSettings)
-    assert isinstance(cfg.paths, PathSettings)
-
-
 def test_setup_logger():
     setup_logger()
     root = logging.getLogger()
@@ -44,7 +38,7 @@ def test_load_config_file_with_yaml(tmp_path):
         yaml.dump(
             {
                 "ocr": {"language": "de", "export_format": "csv"},
-                "paths": {"output_dir": str(tmp_path / "out")},
+                "paths": {"input_dir": str(tmp_path / "in"), "output_dir": str(tmp_path / "out")},
             }
         ),
         encoding="utf-8",
@@ -56,22 +50,16 @@ def test_load_config_file_with_yaml(tmp_path):
     assert config.paths.output_dir.exists()
 
 
-def test_load_config_file_missing(tmp_path, capsys):
+def test_load_config_file_missing(tmp_path):
     missing = tmp_path / "missing.yaml"
 
-    config = load_config_file(missing)
-    captured = capsys.readouterr()
-
-    assert "Configuration file not found" in captured.out
-    assert config.ocr.language == "en"
-    assert config.paths.output_dir.exists()
+    with pytest.raises(ValueError, match="Configuration file not found at"):
+        load_config_file(missing)
 
 
 def test_load_config_file_empty(tmp_path):
     yaml_file = tmp_path / "empty.yaml"
     yaml_file.write_text("", encoding="utf-8")
 
-    config = load_config_file(yaml_file)
-
-    assert config.ocr.language == "en"
-    assert config.paths.output_dir.exists()
+    with pytest.raises(ValidationError):
+        load_config_file(yaml_file)

@@ -1,7 +1,7 @@
 ocr:
   language: "en"
-  export_format: "excel"
+  export_format: "csv"
 
 paths:
-  input_dir: "./inputs/test.png"
+  input_dir: "./inputs"
   output_dir: "./dist"

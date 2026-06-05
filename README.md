@@ -35,6 +35,7 @@ ocr:
   export_format: "csv"     # Format of output (either 'csv', 'excel' or 'both')
 
 paths:
+  input_dir: "/inputs" # Folder where input files are present
   output_dir: "./output_result"  # Folder where output will be saved
 ```
 
@@ -56,16 +57,38 @@ To run the pipeline, execute `src.main` via `uv run` by passing the configuratio
 
 If you feed it an individual file, the engine validates the extension and processes it immediately.
 
+```yaml
+#config.yaml
+ocr:
+  language: "en"
+  export_format: "csv"
+
+paths:
+  input_dir: "./input/foo.jpg"
+  output_dir: "./dist"
+```
+
 ```bash
-uv run python -m src.main config.yaml dataset/invoice_table.png
+uv run python -m src.main config.yaml 
 ```
 
 #### Example 2: Batch Processing an Entire Folder
 
 If you feed it a folder path, the pipeline scans the directory, automatically skips incompatible files (like text files), sorts the remaining images alphabetically, and loops through them sequentially.
 
+```yaml
+#config.yaml
+ocr:
+  language: "en"
+  export_format: "csv"
+
+paths:
+  input_dir: "./inputs/"
+  output_dir: "./dist"
+```
+
 ```bash
-uv run python -m src.main config.yaml dataset/scanned_documents/
+uv run python -m src.main config.yaml
 ```
 
 ## Hugging Face Authentication
