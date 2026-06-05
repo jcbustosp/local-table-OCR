@@ -9,7 +9,7 @@ from src.exporter import DataExporter
 logger = logging.getLogger(__name__)
 
 
-def run_pipeline(config_file_path: str, input_target_path: str) -> None:
+def run_pipeline(config_file_path: str) -> None:
     """Orchestrates single file validation or multi-file directory batch processing."""
     try:
         # 1. Load configuration and spin up processors via Dependency Injection
@@ -21,7 +21,7 @@ def run_pipeline(config_file_path: str, input_target_path: str) -> None:
             output_dir=config.paths.output_dir, export_format=config.ocr.export_format
         )
 
-        target = Path(input_target_path)
+        target = config.paths.input_dir
         images_to_process = []
 
         # 2. Resolve input targets dynamically
@@ -62,7 +62,7 @@ def run_pipeline(config_file_path: str, input_target_path: str) -> None:
 
 
 def main():
-    if len(sys.argv) < 3:
+    if len(sys.argv) < 2:
         sys.stderr.write(
             "\n❌ Error: Missing required arguments.\n"
             "💡 Usage:\n"
@@ -71,9 +71,8 @@ def main():
         sys.exit(1)
 
     CONFIG_INPUT = sys.argv[1]
-    TARGET_INPUT = sys.argv[2]
 
-    run_pipeline(CONFIG_INPUT, TARGET_INPUT)
+    run_pipeline(CONFIG_INPUT)
 
 
 if __name__ == "__main__":  # pragma: nocover

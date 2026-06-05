@@ -21,14 +21,15 @@ class OcrSettings(BaseModel):
 class PathSettings(BaseModel):
     """Validates structural filesystem mappings."""
 
+    input_dir: Path = Field(description="Path of file or folder with input files to process.")
     output_dir: Path = Field(default=Path("./dist"), description="Folder to save results")
 
 
 class AppConfig(BaseModel):
     """The root configuration object filled purely by the input YAML file."""
 
-    ocr: OcrSettings = Field(default_factory=OcrSettings)
-    paths: PathSettings = Field(default_factory=PathSettings)
+    ocr: OcrSettings
+    paths: PathSettings
 
 
 def setup_logger() -> None:
@@ -49,7 +50,7 @@ def load_config_file(yaml_path: Path) -> AppConfig:
         with open(yaml_path, encoding="utf-8") as f:
             yaml_data = yaml.safe_load(f) or {}
     else:
-        print(f"⚠️ Configuration file not found at '{yaml_path}'. Using safe defaults.")
+        raise ValueError(f"Configuration file not found at '{yaml_path}'.")
 
     config = AppConfig(**yaml_data)
 
