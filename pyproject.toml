@@ -32,40 +32,34 @@ line-length = 100
 
 
 [tool.ruff.lint]
-# Select rule families to actively enforce:
-# E/W = pycodestyle (style violations and spacing)
-# F   = Pyflakes (critical logic bugs, undefined variables)
-# I   = isort (automatically sorts your imports alphabetically)
-# UP  = pyupgrade (modernizes python syntax like type hints automatically)
-# B   = flake8-bugbear (common programming traps and code design smells)
-select = [
-    "E",
-    "W",
-    "F",
-    "I",
-    "UP",
-    "B",
-
-    # Additional high-value checks
-    "SIM",   # simplify
-    "C4",    # comprehensions
-    "RUF",   # Ruff-specific
+select = ["ANN", "E", "W", "F", "I", "UP", "B", "SIM", "C4", "RUF"]
+ignore = [
+    "E203",
+    "ANN201",
+    "ANN202",
+    "ANN204",
+    "ANN205",
+    "ANN206",
 ]
+
 
 # Explicitly tell Ruff which rules it is allowed to rewrite on disk automatically
 fixable = ["ALL"]
 
-# Ignore rules that directly conflict with the automatic ruff formatter rules
-ignore = ["E203"]
 
 [tool.ruff.lint.isort]
 # Combines your internal local project files neatly separate from external third-party imports
 known-first-party = ["src"]
 
 [tool.pyright]
-typeCheckingMode = "basic"
+typeCheckingMode = "strict"
 reportAttributeAccessIssue = false
-
+reportMissingTypeStubs = false
+reportUnknownArgumentType = true
+reportUnknownParameterType = true
+reportUnknownReturnType = true
+reportUnknownMemberType = false
+reportUnknownVariableType = false
 [tool.bandit]
 exclude_dirs = ["tests"]
 severity = "medium"
@@ -84,6 +78,10 @@ addopts = """
 branch = true
 source = ["src"]
 data_file = ".dist/.coverage"
+omit = [
+    "*/test_*.py",
+    "*/tests/*",
+]
 
 [tool.coverage.report]
 show_missing = true

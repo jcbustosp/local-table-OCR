@@ -34,10 +34,11 @@ class DataExporter:
                     # Read the Excel file we just created
                     xl = pd.ExcelFile(excel_path)
                     for sheet in xl.sheet_names:
-                        df = xl.parse(sheet)
+                        # df: pd.DataFrame = xl.parse(sheet)
+                        df: pd.DataFrame = pd.read_excel(excel_path, sheet_name=sheet)
 
                         # Save to CSV using the sheet name for clarity
-                        csv_path = target_folder / f"{base_name}_{sheet.lower()}.csv"
+                        csv_path = target_folder / f"{base_name}_{str(sheet).lower()}.csv"
                         df.to_csv(csv_path, index=False, encoding="utf-8-sig")
                         logger.info("Successfully converted %s to CSV.", sheet)
 

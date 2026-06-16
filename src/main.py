@@ -1,6 +1,7 @@
 import logging
 import sys
 from pathlib import Path
+from typing import Literal
 
 from src.config import load_config_file
 from src.engine import OCREngine
@@ -8,9 +9,12 @@ from src.exporter import DataExporter
 
 logger = logging.getLogger(__name__)
 
+RunPipelineOutput: Literal[0, 1]
 
-def run_pipeline(config_file_path: str) -> None:
-    """Orchestrates single file validation or multi-file directory batch processing."""
+
+def run_pipeline(config_file_path: str) -> Literal[0, 1]:
+    """Orchestrates single file validation or multi-file directory batch processing.
+    Returns 0 if successful, 1 if an error occurred"""
     try:
         # 1. Load configuration and spin up processors via Dependency Injection
         config = load_config_file(Path(config_file_path))
@@ -22,7 +26,7 @@ def run_pipeline(config_file_path: str) -> None:
         )
 
         target = config.paths.input_dir
-        images_to_process = []
+        images_to_process: list[Path] = []
 
         # 2. Resolve input targets dynamically
         if target.is_file():
@@ -30,7 +34,7 @@ def run_pipeline(config_file_path: str) -> None:
                 images_to_process.append(target)
             else:
                 logger.error("Unsupported file extension format: %s", target.suffix)
-                sys.exit(1)
+                return 1
 
         elif target.is_dir():
             logger.info("Directory target detected. Scanning for valid image files...")
@@ -40,14 +44,15 @@ def run_pipeline(config_file_path: str) -> None:
 
             if not images_to_process:
                 logger.warning("No valid images found inside: %s", target)
-                return
+                return 0
         else:
             logger.error("Input target path does not exist: %s", target)
-            sys.exit(1)
+            return 1
 
         # 3. Process discovered images sequentially
         logger.info("Found %d file(s) queue ready for processing.", len(images_to_process))
 
+        failed = 0
         for idx, img_path in enumerate(images_to_process, start=1):
             logger.info("--- [%d / %d] ---", idx, len(images_to_process))
             try:
@@ -55,10 +60,13 @@ def run_pipeline(config_file_path: str) -> None:
                 exporter.save_results(raw_data, source_image_path=img_path)
             except Exception as e:
                 logger.error("Failed to process file %s: %s", img_path.name, e)
+                failed += 1
+
+        return 1 if failed > 0 else 0
 
     except Exception as e:
         logger.exception("An unexpected orchestration crash occurred: %s", e)
-        sys.exit(1)
+        return 1
 
 
 def main():
@@ -66,13 +74,14 @@ def main():
         sys.stderr.write(
             "\n❌ Error: Missing required arguments.\n"
             "💡 Usage:\n"
-            "   uv run python -m src.main <CONFIG_PATH> <INPUT_FILE_OR_DIR>\n\n"
+            "   uv run python -m src.main <CONFIG_PATH>\n\n"
         )
         sys.exit(1)
 
     CONFIG_INPUT = sys.argv[1]
 
-    run_pipeline(CONFIG_INPUT)
+    return_code = run_pipeline(CONFIG_INPUT)
+    sys.exit(return_code)
 
 
 if __name__ == "__main__":  # pragma: nocover

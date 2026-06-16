@@ -45,14 +45,13 @@ def setup_logger() -> None:
 
 def load_config_file(yaml_path: Path) -> AppConfig:
     """Loads a specific configuration yaml path, validates it, and starts logging."""
-    yaml_data = {}
-    if yaml_path.exists():
-        with open(yaml_path, encoding="utf-8") as f:
-            yaml_data = yaml.safe_load(f) or {}
-    else:
+    if not yaml_path.exists():
         raise ValueError(f"Configuration file not found at '{yaml_path}'.")
 
-    config = AppConfig(**yaml_data)
+    with yaml_path.open(encoding="utf-8") as f:
+        raw_data: object = yaml.safe_load(f)
+
+    config = AppConfig.model_validate(raw_data)
 
     setup_logger()
 

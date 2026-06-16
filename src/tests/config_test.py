@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 
 import pytest
 import yaml
@@ -31,7 +32,7 @@ def test_setup_logger():
     assert len(root.handlers) > 0
 
 
-def test_load_config_file_with_yaml(tmp_path):
+def test_load_config_file_with_yaml(tmp_path: Path):
     yaml_file = tmp_path / "config.yaml"
 
     yaml_file.write_text(
@@ -50,14 +51,14 @@ def test_load_config_file_with_yaml(tmp_path):
     assert config.paths.output_dir.exists()
 
 
-def test_load_config_file_missing(tmp_path):
+def test_load_config_file_missing(tmp_path: Path):
     missing = tmp_path / "missing.yaml"
 
     with pytest.raises(ValueError, match="Configuration file not found at"):
         load_config_file(missing)
 
 
-def test_load_config_file_empty(tmp_path):
+def test_load_config_file_empty(tmp_path: Path):
     yaml_file = tmp_path / "empty.yaml"
     yaml_file.write_text("", encoding="utf-8")
 
