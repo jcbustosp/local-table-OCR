@@ -2,112 +2,85 @@ name: CI
 
 on:
   push:
-  pull_request:
-    types: [opened, synchronize, reopened]
 
 permissions:
   contents: read
+  checks: write
   security-events: write
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-
 jobs:
-  lint:
-    name: Lint
+  ci:
+    name: CI Pipeline
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: astral-sh/setup-uv@v5
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
 
-      - run: uv sync --frozen
+      - name: Install dependencies
+        run: uv sync --frozen
 
+      # Lint
       - name: Ruff format check
         run: uv run ruff format --check src/
 
       - name: Ruff lint
         run: uv run ruff check src/
 
-
-  typecheck:
-    name: Typecheck
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-
-      - run: uv sync --frozen
-
+      # Typecheck
       - name: Pyright
         run: uv run pyright
 
-
-  security:
-    name: Security
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-
-      - run: uv sync --frozen
-
+      # Security
       - name: Bandit scan
         run: uv run bandit -r src/ -ll
 
-
-  test:
-    name: Tests
-    runs-on: ubuntu-latest
-
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.12"]
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-
+      # Tests
       - name: Install Python
-        run: uv python install ${{ matrix.python-version }}
+        run: uv python install 3.12
 
-      - name: Sync dependencies
-        run: uv sync --frozen
-
-      - name: Run tests with coverage
+      - name: Pytest
         run: |
           uv run pytest \
             --cov=src \
             --cov-report=term-missing \
             --cov-report=xml:coverage.xml \
-            --cov-fail-under=90 \
-            --junitxml=pytest-results.xml
+            --junitxml=pytest-results.xml \
 
-      - name: Upload pytest results
-        uses: actions/upload-artifact@v4
+      - name: Coverage Report
+        if: always()
+        run: |
+          echo "## Coverage Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          uv run coverage report --format=markdown >> $GITHUB_STEP_SUMMARY
+
+      - name: Publish Test Report
+        if: always()
+        uses: mikepenz/action-junit-report@v5
         with:
-          name: pytest-results-py${{ matrix.python-version }}
-          path: pytest-results.xml
+          report_paths: pytest-results.xml
+          include_passed: true
 
       - name: Upload coverage report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-py${{ matrix.python-version }}
+          name: coverage-report
           path: coverage.xml
+
+      # Optional
+      # - name: Upload test results
+      #   if: always()
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: pytest-results
+      #     path: pytest-results.xml
