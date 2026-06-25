@@ -6,7 +6,7 @@ A modular, CPU-optimized Python pipeline for table structural parsing and text e
 
 ## Getting Started
 
-This project uses [uv](https://github.com/astral-sh/uv), an extremely fast Python package and project manager.
+This project uses [uv](https://github.com/astral-sh/uv), a RUST based Python package and project manager.
 
 ### Pre-requisites
 
